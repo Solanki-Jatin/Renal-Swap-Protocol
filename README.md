@@ -403,9 +403,9 @@ Built for the NSUT hackathon under the Open Innovation and Social Impact track.
 
 | Name | Role |
 |---|---|
-| Your name | Algorithm design and backend |
-| Teammate name | Frontend and visualization |
-| Teammate name | Data modeling and benchmarking |
+| Jatin Solanki | Algorithm design and backend |
+| Ujjawal Kumar | Frontend and visualization |
+| - | Data modeling and benchmarking |
 
 <br/>
 
