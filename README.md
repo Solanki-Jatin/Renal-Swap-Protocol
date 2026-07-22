@@ -23,7 +23,7 @@
 
 <div align="center">
   <img src="docs/assets/demo.gif" alt="Live demo of a three way kidney exchange cycle being detected and highlighted on the compatibility graph" width="720"/>
-  <p><i>Placeholder: record a short screen capture of a 3 way cycle lighting up on the graph and drop it at <code>docs/assets/demo.gif</code>. This single visual is usually what makes judges stop scrolling.</i></p>
+  <p><i>Placeholder</i></p>
 </div>
 
 <br/>
