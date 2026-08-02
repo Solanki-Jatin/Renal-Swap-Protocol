@@ -13,6 +13,7 @@ Run with:
 
 from algorithm_core.generator import generate_incompatible_pairs, generate_altruistic_donors
 from algorithm_core.graph_builder import build_compatibility_graph, graph_summary
+from algorithm_core.cycle_finder import find_candidate_cycles, cycles_summary
 
 
 def main():
@@ -35,7 +36,22 @@ def main():
     for key, value in summary.items():
         print(f"  {key}: {value}")
 
-    print("\nNext up: cycle detection will turn this graph into actual matches.")
+    print("\nSearching for valid 2-way and 3-way exchange cycles...")
+    cycles = find_candidate_cycles(graph)
+    cycle_stats = cycles_summary(cycles)
+
+    print("\nCandidate cycles found:")
+    for key, value in cycle_stats.items():
+        print(f"  {key}: {value}")
+
+    if cycles:
+        print("\nExample cycle (a valid, ready to happen swap):")
+        print(f"  {cycles[0]}")
+
+    print(
+        "\nNext up: choosing the best non-overlapping combination of these "
+        "cycles, using an optimal solver and a fast greedy baseline."
+    )
 
 
 if __name__ == "__main__":
