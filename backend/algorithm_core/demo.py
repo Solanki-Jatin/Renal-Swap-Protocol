@@ -14,6 +14,7 @@ Run with:
 from algorithm_core.generator import generate_incompatible_pairs, generate_altruistic_donors
 from algorithm_core.graph_builder import build_compatibility_graph, graph_summary
 from algorithm_core.cycle_finder import find_candidate_cycles, cycles_summary
+from algorithm_core.optimal_matcher import solve_optimal_matching
 
 
 def main():
@@ -48,9 +49,15 @@ def main():
         print("\nExample cycle (a valid, ready to happen swap):")
         print(f"  {cycles[0]}")
 
+    print("\nSolving for the optimal, non-overlapping combination of cycles...")
+    result = solve_optimal_matching(cycles)
+    print(f"  solver status: {result.status}")
+    print(f"  cycles selected: {len(result.selected_cycles)}")
+    print(f"  total patients matched: {result.matched_pairs} out of {len(pairs)} pairs in the pool")
+
     print(
-        "\nNext up: choosing the best non-overlapping combination of these "
-        "cycles, using an optimal solver and a fast greedy baseline."
+        "\nNext up: a fast greedy baseline, so the optimal result above "
+        "can be compared against it on both match rate and runtime."
     )
 
 
