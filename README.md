@@ -318,7 +318,7 @@ These endpoints are planned and not yet implemented, listed here so the frontend
 
 ## Benchmarks
 
-This table is a placeholder, replace it with real numbers once phase 7 of the build is done. Judges respond well to a table exactly like this because it proves the ILP versus greedy comparison isn't just a talking point.
+This table is a placeholder, will replace it with real numbers once phase 7 of the build is done.
 
 | Pool size | Optimal matched | Greedy matched | Optimal runtime | Greedy runtime |
 |---|---|---|---|---|
