@@ -35,6 +35,7 @@
 - [How it works](#how-it-works)
 - [Architecture](#architecture)
 - [What makes this different from a typical hackathon project](#what-makes-this-different-from-a-typical-hackathon-project)
+- [Current build status](#current-build-status)
 - [Features](#features)
 - [Tech stack](#tech-stack)
 - [Project structure](#project-structure)
@@ -76,7 +77,7 @@ Model every incompatible patient-donor pair as a node in a directed graph. Draw 
 
 3. **Enumerate candidate cycles.** A bounded depth first search finds every cycle of length 2 and length 3 in the graph. The length cap of 3 isn't arbitrary, it mirrors the real world constraint that every surgery in a cycle has to happen on the same day, in every hospital involved, since no donor can be asked to wait and risk the other side of the swap falling through.
 
-4. **Solve for the optimal set of disjoint cycles.** This is where the actual optimization happens. Each candidate cycle becomes a binary decision variable, and an integer linear program (solved with Google OR-Tools' CBC solver) picks the combination of non overlapping cycles that maximizes total patients matched. A greedy baseline algorithm runs alongside it, picking the highest value cycles first, so the project can show, with real numbers, exactly how much better the optimal solution is and at what computational cost.
+4. **Solve for the optimal set of disjoint cycles.** This is where the actual optimization happens. Each candidate cycle becomes a binary decision variable, and an integer program, solved with Google OR-Tools' CP-SAT solver, picks the combination of non overlapping cycles that maximizes total patients matched. A greedy baseline algorithm will run alongside it, picking the highest value cycles first, so the project can show, with real numbers, exactly how much better the optimal solution is and at what computational cost.
 
 5. **Visualize the result.** The frontend renders the full compatibility graph and animates the specific cycles that were selected, so a viewer can watch a 3 way swap light up in real time instead of reading a results table.
 
@@ -138,15 +139,30 @@ The parts worth highlighting to judges:
 
 <br/>
 
+## Current build status
+
+The algorithm core, the part that actually proves the computer science works, is the furthest along. It runs end to end from the terminal already, no server or frontend required.
+
+| Stage | What it proves | Status |
+|---|---|---|
+| Synthetic pairs generated | Realistic patient-donor pool exists | Working |
+| Compatibility graph built | Pairs correctly connected by ABO rules | Working |
+| Candidate cycles found | Valid 2 way and 3 way swaps identified | Working |
+| Optimal set selected | Best possible combination of swaps chosen, via ILP | Working, pending a final local verification pass |
+
+Roughly 40 percent of the full project is complete by weight, with the algorithm core, the hardest and most judge relevant part, at about three quarters done. What's left there is the greedy baseline and the benchmark comparing it against the optimal solver. The API layer and frontend have not been started yet, the frontend is being built in parallel against a fixed mock data format.
+
+<br/>
+
 ## Features
 
 | Feature | Description | Status |
 |---|---|---|
-| Synthetic dataset generator | Produces realistic patient-donor pools using population level blood type distributions | Planned |
-| Compatibility graph builder | Converts a pair pool into a directed graph using NetworkX | Planned |
-| Bounded cycle enumeration | Finds every valid 2 way and 3 way exchange cycle | Planned |
+| Synthetic dataset generator | Produces realistic patient-donor pools using population level blood type distributions | Done |
+| Compatibility graph builder | Converts a pair pool into a directed graph using NetworkX | Done |
+| Bounded cycle enumeration | Finds every valid 2 way and 3 way exchange cycle | Done |
+| ILP optimal matcher | Maximizes total matched patients using Google OR-Tools | Done, pending local verification |
 | Altruistic donor chains | Supports open ended chains started by non directed donors | Planned |
-| ILP optimal matcher | Maximizes total matched patients using Google OR-Tools | Planned |
 | Greedy baseline matcher | Fast approximate matcher, used for benchmarking against the optimal solver | Planned |
 | Benchmark suite | Compares match rate and runtime of optimal vs greedy across pool sizes | Planned |
 | REST API | FastAPI endpoints for running matches, generating data, and fetching benchmarks | Planned |
@@ -200,21 +216,22 @@ Update the status column as each phase lands, this table doubles as a lightweigh
 kidney-exchange-matching/
 ├── backend/
 │   ├── algorithm_core/
-│   │   ├── models.py            # Patient, Donor, IncompatiblePair
-│   │   ├── generator.py         # synthetic dataset generator
-│   │   ├── compatibility.py     # blood type and crossmatch rules
-│   │   ├── graph_builder.py     # builds the directed compatibility graph
-│   │   ├── cycle_finder.py      # bounded length cycle enumeration
-│   │   ├── chain_finder.py      # altruistic donor chain construction
-│   │   ├── optimal_matcher.py   # ILP formulation and solver
-│   │   ├── greedy_matcher.py    # greedy baseline
+│   │   ├── models.py            # Patient, Donor, IncompatiblePair, done
+│   │   ├── generator.py         # synthetic dataset generator, done
+│   │   ├── compatibility.py     # blood type and crossmatch rules, done
+│   │   ├── graph_builder.py     # builds the directed compatibility graph, done
+│   │   ├── cycle_finder.py      # bounded length cycle enumeration, done
+│   │   ├── optimal_matcher.py   # ILP formulation and solver, done
+│   │   ├── chain_finder.py      # altruistic donor chain construction, not started
+│   │   ├── greedy_matcher.py    # greedy baseline, not started
+│   │   ├── demo.py              # runnable end to end terminal demo, done
 │   │   └── tests/
 │   ├── api/
-│   │   ├── main.py               # FastAPI app entrypoint
+│   │   ├── main.py               # FastAPI app entrypoint, not started
 │   │   ├── routes/
 │   │   └── schemas/
 │   └── benchmarks/
-│       └── run_benchmarks.py
+│       └── run_benchmarks.py     # not started
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
@@ -263,9 +280,9 @@ This creates an isolated Python environment so the project's dependencies don't 
 python -m algorithm_core.demo
 ```
 
-This runs the full pipeline end to end on a small synthetic dataset and prints the matched cycles straight to the terminal. Useful for proving the algorithm works before touching the web layer at all.
+This runs the pipeline built so far end to end on a small synthetic dataset, dataset generation, graph construction, cycle detection, and optimal matching, and prints the results straight to the terminal. Useful for proving the algorithm works before touching the web layer at all.
 
-**4. Start the API server**
+**4. Start the API server, once it exists**
 
 ```bash
 uvicorn api.main:app --reload
@@ -295,7 +312,7 @@ Open the printed local URL in your browser to see the graph visualization and da
 | `POST` | `/match/greedy` | Runs the greedy baseline matcher for comparison |
 | `GET` | `/benchmark` | Returns match rate and runtime results across a range of pool sizes |
 
-Full request and response schemas are documented automatically by FastAPI at the `/docs` endpoint once the server is running.
+These endpoints are planned and not yet implemented, listed here so the frontend can be built against a fixed contract in the meantime. Full request and response schemas will be documented automatically by FastAPI at the `/docs` endpoint once the server is running.
 
 <br/>
 
@@ -334,10 +351,10 @@ All four of these are placeholders. Drop real screenshots into `docs/assets/` wi
 ## Roadmap
 
 - [x] Finalize problem scope and algorithmic approach
-- [ ] Core data models and synthetic dataset generator
-- [ ] Compatibility graph construction
-- [ ] Bounded cycle enumeration
-- [ ] ILP optimal matcher
+- [x] Core data models and synthetic dataset generator
+- [x] Compatibility graph construction
+- [x] Bounded cycle enumeration
+- [x] ILP optimal matcher
 - [ ] Greedy baseline matcher and benchmark suite
 - [ ] FastAPI backend
 - [ ] Interactive frontend with live cycle highlighting
