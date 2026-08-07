@@ -1,11 +1,6 @@
 """
 Quick end to end demo of the algorithm core, runnable straight from the
-terminal, with no web server or frontend involved. This is the fastest
-way to prove the core algorithm actually works.
-
-As later phases (cycle detection, optimal and greedy matching) get
-built, this script will grow to show the full pipeline. Right now it
-covers dataset generation and the compatibility graph.
+terminal, with no web server or frontend involved.
 
 Run with:
     python -m algorithm_core.demo
@@ -15,6 +10,7 @@ from algorithm_core.generator import generate_incompatible_pairs, generate_altru
 from algorithm_core.graph_builder import build_compatibility_graph, graph_summary
 from algorithm_core.cycle_finder import find_candidate_cycles, cycles_summary
 from algorithm_core.optimal_matcher import solve_optimal_matching
+from algorithm_core.greedy_matcher import solve_greedy_matching
 
 
 def main():
@@ -49,15 +45,28 @@ def main():
         print("\nExample cycle (a valid, ready to happen swap):")
         print(f"  {cycles[0]}")
 
-    print("\nSolving for the optimal, non-overlapping combination of cycles...")
-    result = solve_optimal_matching(cycles)
-    print(f"  solver status: {result.status}")
-    print(f"  cycles selected: {len(result.selected_cycles)}")
-    print(f"  total patients matched: {result.matched_pairs} out of {len(pairs)} pairs in the pool")
+    print("\nSolving with the optimal ILP matcher...")
+    optimal_result = solve_optimal_matching(cycles)
+    print(f"  solver status: {optimal_result.status}")
+    print(f"  cycles selected: {len(optimal_result.selected_cycles)}")
+    print(f"  total patients matched: {optimal_result.matched_pairs}")
+
+    print("\nSolving with the greedy baseline matcher...")
+    greedy_result = solve_greedy_matching(cycles)
+    print(f"  cycles selected: {len(greedy_result.selected_cycles)}")
+    print(f"  total patients matched: {greedy_result.matched_pairs}")
+
+    print(f"\nOut of {len(pairs)} pairs in the pool:")
+    print(f"  optimal matched {optimal_result.matched_pairs} patients")
+    print(f"  greedy matched {greedy_result.matched_pairs} patients")
+
+    if optimal_result.matched_pairs > greedy_result.matched_pairs:
+        gap = optimal_result.matched_pairs - greedy_result.matched_pairs
+        print(f"  optimal found {gap} more matches than greedy on this pool")
 
     print(
-        "\nNext up: a fast greedy baseline, so the optimal result above "
-        "can be compared against it on both match rate and runtime."
+        "\nNext up: a formal benchmark suite, running both matchers "
+        "across many pool sizes and recording match rate and runtime."
     )
 
 
