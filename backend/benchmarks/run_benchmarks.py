@@ -17,28 +17,60 @@ from algorithm_core.graph_builder import build_compatibility_graph
 from algorithm_core.cycle_finder import find_candidate_cycles
 from algorithm_core.greedy_matcher import solve_greedy_matching
 
-DEFAULT_POOL_SIZES = [50, 200, 1000, 2000]
+# Compatibility graphs get dense fast (O donors and AB patients act as
+# near universal connectors), which makes the number of valid 3-way
+# cycles grow roughly with the cube of the pool size: 50 pairs finds
+# a couple hundred cycles, 300 pairs finds tens of thousands, and by
+# 1000+ pairs the true count reaches into the millions. These sizes
+# were chosen because every one of them completes a FULL, uncapped
+# cycle search (verified up to about 5 seconds at 300 pairs), so the
+# numbers below are exact, not truncated, and won't show the
+# misleading non-monotonic dip that comes from cutting a dense search
+# off partway through. Scaling this suite past a few hundred pairs is
+# tracked as a stretch goal in the README's roadmap.
+DEFAULT_POOL_SIZES = [50, 100, 200, 300]
 SEED = 42
+
+# The ILP solver is capped hard at this many seconds per pool size, no
+# matter how large the pool is. Past this point it returns the best
+# feasible answer found so far rather than continuing to search for a
+# provably optimal one, which keeps the whole suite predictable to run.
+MAX_TIME_LIMIT_SECONDS = 15.0
+
+# Safety net only, not meant to be hit by the default pool sizes above.
+# Protects against someone calling run_single_benchmark directly with
+# a much larger, denser pool than this suite is tuned for.
+MAX_CANDIDATE_CYCLES = 200_000
 
 
 def _time_limit_for_pool(pool_size: int) -> float:
-    """
-    Larger pools produce more candidate cycles, which the ILP solver
-    needs more time to search through. This scales the time budget
-    with pool size instead of using one fixed limit for every run.
-    """
-    return min(60.0, max(5.0, pool_size / 20))
+    """Scales the ILP solver's time budget with pool size, capped at MAX_TIME_LIMIT_SECONDS."""
+    return min(MAX_TIME_LIMIT_SECONDS, max(3.0, pool_size / 50))
 
 
-def run_single_benchmark(pool_size: int, seed: int = SEED) -> dict:
+def run_single_benchmark(pool_size: int, seed: int = SEED, verbose: bool = True) -> dict:
     """
     Generates one synthetic pool of the given size, runs both matchers
     against it, and returns a single row of benchmark data: how many
     patients each matcher matched, and how long each one took.
+
+    verbose prints a short status line after each stage, so a slow
+    pool size shows visible progress instead of looking frozen.
     """
+
+    def log(message: str) -> None:
+        if verbose:
+            print(f"  [{pool_size}] {message}")
+
+    log("generating pairs...")
     pairs = generate_incompatible_pairs(count=pool_size, seed=seed)
+
+    log(f"building compatibility graph ({pool_size} pairs)...")
     graph = build_compatibility_graph(pairs, seed=seed)
-    cycles = find_candidate_cycles(graph)
+
+    log("finding candidate cycles (capped for large, dense pools)...")
+    cycles = find_candidate_cycles(graph, max_cycles=MAX_CANDIDATE_CYCLES)
+    log(f"found {len(cycles)} candidate cycles")
 
     # Imported here rather than at the top of the file, so that the
     # rest of this module (the table printing and CSV saving helpers)
@@ -46,14 +78,17 @@ def run_single_benchmark(pool_size: int, seed: int = SEED) -> dict:
     from algorithm_core.optimal_matcher import solve_optimal_matching
 
     time_limit = _time_limit_for_pool(pool_size)
-
+    log(f"solving optimally (time limit {time_limit}s)...")
     start = time.perf_counter()
     optimal_result = solve_optimal_matching(cycles, time_limit_seconds=time_limit)
     optimal_time_ms = (time.perf_counter() - start) * 1000
+    log(f"optimal done: matched {optimal_result.matched_pairs}, status {optimal_result.status}")
 
+    log("solving greedily...")
     start = time.perf_counter()
     greedy_result = solve_greedy_matching(cycles)
     greedy_time_ms = (time.perf_counter() - start) * 1000
+    log(f"greedy done: matched {greedy_result.matched_pairs}")
 
     return {
         "pool_size": pool_size,
@@ -66,13 +101,13 @@ def run_single_benchmark(pool_size: int, seed: int = SEED) -> dict:
     }
 
 
-def run_all_benchmarks(pool_sizes: Optional[List[int]] = None) -> List[dict]:
+def run_all_benchmarks(pool_sizes: Optional[List[int]] = None, verbose: bool = True) -> List[dict]:
     """Runs run_single_benchmark for every pool size and collects the results."""
     sizes = pool_sizes or DEFAULT_POOL_SIZES
     results = []
     for size in sizes:
-        print(f"Running benchmark for pool size {size}...")
-        results.append(run_single_benchmark(size))
+        print(f"\nRunning benchmark for pool size {size}...")
+        results.append(run_single_benchmark(size, verbose=verbose))
     return results
 
 
