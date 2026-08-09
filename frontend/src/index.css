@@ -1,0 +1,61 @@
+:root {
+  /* Color tokens */
+  --bg: #0b1220;
+  --panel: #121a2c;
+  --panel-border: #223052;
+  --text: #e7ecf5;
+  --text-dim: #8592ac;
+  --accent-amber: #f2a93b;
+  --accent-amber-glow: #f2a93b66;
+  --accent-teal: #34d3c6;
+  --accent-slate: #47536b;
+  --accent-danger: #e4586b;
+
+  /* Type tokens */
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent-teal);
+  outline-offset: 2px;
+}
+
+input,
+select {
+  font-family: var(--font-mono);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
