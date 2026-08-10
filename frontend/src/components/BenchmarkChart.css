@@ -1,0 +1,56 @@
+.benchmark-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.benchmark-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.benchmark-header h3 {
+  margin: 0 0 2px 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+}
+
+.benchmark-subtitle {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.82rem;
+}
+
+.benchmark-run {
+  flex-shrink: 0;
+  padding: 9px 14px;
+  background: transparent;
+  color: var(--accent-amber);
+  border: 1px solid var(--accent-amber);
+  border-radius: 7px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  transition: background 0.15s ease;
+}
+
+.benchmark-run:not(:disabled):hover {
+  background: #f2a93b1a;
+}
+
+.benchmark-run:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.benchmark-hint,
+.benchmark-error {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.benchmark-error {
+  color: var(--accent-danger);
+}
