@@ -75,11 +75,11 @@ Model every incompatible patient-donor pair as a node in a directed graph. Draw 
 
 2. **Build the compatibility graph.** Every pair becomes a node. A directed edge is added from pair A to pair B when A's donor could safely donate to B's patient. This is handled with NetworkX so the graph itself is inspectable, exportable, and easy to visualize.
 
-3. **Enumerate candidate cycles.** A bounded depth first search finds every cycle of length 2 and length 3 in the graph. The length cap of 3 isn't arbitrary, it mirrors the real world constraint that every surgery in a cycle has to happen on the same day, in every hospital involved, since no donor can be asked to wait and risk the other side of the swap falling through.
+3. **Enumerate candidate cycles.** A bounded search finds every cycle of length 2 and length 3 in the graph. The length cap of 3 isn't arbitrary, it mirrors the real world constraint that every surgery in a cycle has to happen on the same day, in every hospital involved, since no donor can be asked to wait and risk the other side of the swap falling through.
 
-4. **Solve for the optimal set of disjoint cycles.** This is where the actual optimization happens. Each candidate cycle becomes a binary decision variable, and an integer program, solved with Google OR-Tools' CP-SAT solver, picks the combination of non overlapping cycles that maximizes total patients matched. A greedy baseline algorithm will run alongside it, picking the highest value cycles first, so the project can show, with real numbers, exactly how much better the optimal solution is and at what computational cost.
+4. **Solve for the optimal set of disjoint cycles.** This is where the actual optimization happens. Each candidate cycle becomes a binary decision variable, and an integer program, solved with Google OR-Tools' CP-SAT solver, picks the combination of non overlapping cycles that maximizes total patients matched. A greedy baseline algorithm runs alongside it, picking the highest value cycles first, so the project can show, with real numbers, exactly how much better the optimal solution is and at what computational cost.
 
-5. **Visualize the result.** The frontend renders the full compatibility graph and animates the specific cycles that were selected, so a viewer can watch a 3 way swap light up in real time instead of reading a results table.
+5. **Visualize the result.** The frontend renders the pool as a ring, every pair is a point on a circle, since a matched swap is literally a closed loop. Matched cycles glow and animate, so a viewer watches a swap light up in real time instead of reading a results table.
 
 <br/>
 
@@ -141,16 +141,20 @@ The parts worth highlighting to judges:
 
 ## Current build status
 
-The algorithm core, the part that actually proves the computer science works, is the furthest along. It runs end to end from the terminal already, no server or frontend required.
+The full pipeline works end to end now, terminal, API, and frontend all verified against each other, not just in isolation.
 
 | Stage | What it proves | Status |
 |---|---|---|
-| Synthetic pairs generated | Realistic patient-donor pool exists | Working |
-| Compatibility graph built | Pairs correctly connected by ABO rules | Working |
-| Candidate cycles found | Valid 2 way and 3 way swaps identified | Working |
-| Optimal set selected | Best possible combination of swaps chosen, via ILP | Working, pending a final local verification pass |
+| Synthetic pairs generated | Realistic patient-donor pool exists | Verified |
+| Compatibility graph built | Pairs correctly connected by ABO rules | Verified |
+| Candidate cycles found | Valid 2 way and 3 way swaps identified | Verified |
+| Optimal set selected | Best possible combination of swaps chosen, via ILP | Verified |
+| Greedy baseline compared | Quantifies the gap against the optimal solver | Verified |
+| Benchmark suite run | Real match rate and runtime numbers produced | Verified, see Benchmarks below |
+| API live | All five endpoints tested through the interactive `/docs` page | Verified |
+| Frontend built | Full graph view, dashboard, control panel, and benchmark chart, built against the real API | Build verified, a final look-at-it-in-a-real-browser pass is still worth doing before demo day |
 
-Roughly 40 percent of the full project is complete by weight, with the algorithm core, the hardest and most judge relevant part, at about three quarters done. What's left there is the greedy baseline and the benchmark comparing it against the optimal solver. The API layer and frontend have not been started yet, the frontend is being built in parallel against a fixed mock data format.
+The project is functionally complete for a working prototype. What's left is polish: the demo gif and screenshots, and the stretch goals below.
 
 <br/>
 
@@ -161,15 +165,13 @@ Roughly 40 percent of the full project is complete by weight, with the algorithm
 | Synthetic dataset generator | Produces realistic patient-donor pools using population level blood type distributions | Done |
 | Compatibility graph builder | Converts a pair pool into a directed graph using NetworkX | Done |
 | Bounded cycle enumeration | Finds every valid 2 way and 3 way exchange cycle | Done |
-| ILP optimal matcher | Maximizes total matched patients using Google OR-Tools | Done, pending local verification |
-| Altruistic donor chains | Supports open ended chains started by non directed donors | Planned |
-| Greedy baseline matcher | Fast approximate matcher, used for benchmarking against the optimal solver | Planned |
-| Benchmark suite | Compares match rate and runtime of optimal vs greedy across pool sizes | Planned |
-| REST API | FastAPI endpoints for running matches, generating data, and fetching benchmarks | Planned |
-| Interactive graph visualization | Renders the compatibility graph and animates selected cycles | Planned |
-| Impact dashboard | Shows patients matched with versus without exchange, side by side | Planned |
-
-Update the status column as each phase lands, this table doubles as a lightweight project tracker that judges and teammates can both read at a glance.
+| ILP optimal matcher | Maximizes total matched patients using Google OR-Tools | Done |
+| Greedy baseline matcher | Fast approximate matcher, benchmarked against the optimal solver | Done |
+| Benchmark suite | Compares match rate and runtime of optimal vs greedy across pool sizes | Done |
+| REST API | FastAPI endpoints for running matches, generating data, and fetching benchmarks | Done |
+| Interactive graph visualization | Renders the compatibility pool as a ring and animates matched cycles | Done |
+| Impact dashboard | Shows patients matched with versus without exchange, side by side | Done |
+| Altruistic donor chains | Supports open ended chains started by non directed donors | Planned, stretch goal |
 
 <br/>
 
@@ -182,8 +184,7 @@ Update the status column as each phase lands, this table doubles as a lightweigh
 **Algorithm core**
 - Python 3.11+
 - NetworkX
-- Google OR-Tools (CBC solver)
-- PuLP (alternative ILP interface)
+- Google OR-Tools (CP-SAT solver)
 - pytest for correctness tests
 
 </td>
@@ -193,16 +194,14 @@ Update the status column as each phase lands, this table doubles as a lightweigh
 - FastAPI
 - Uvicorn
 - Pydantic for request and response models
-- pytest and httpx for API tests
 
 </td>
 <td valign="top" width="33%">
 
 **Frontend**
-- React
-- A graph visualization library (react-flow or a D3 force layout)
-- Recharts for the benchmark and impact charts
-- Vite for the build tooling
+- React + Vite
+- A custom SVG ring layout for the graph view, matched cycles animate on it directly
+- Recharts for the benchmark chart
 
 </td>
 </tr>
@@ -222,28 +221,37 @@ kidney-exchange-matching/
 │   │   ├── graph_builder.py     # builds the directed compatibility graph, done
 │   │   ├── cycle_finder.py      # bounded length cycle enumeration, done
 │   │   ├── optimal_matcher.py   # ILP formulation and solver, done
+│   │   ├── greedy_matcher.py    # greedy baseline, done
 │   │   ├── chain_finder.py      # altruistic donor chain construction, not started
-│   │   ├── greedy_matcher.py    # greedy baseline, not started
 │   │   ├── demo.py              # runnable end to end terminal demo, done
 │   │   └── tests/
 │   ├── api/
-│   │   ├── main.py               # FastAPI app entrypoint, not started
-│   │   ├── routes/
-│   │   └── schemas/
-│   └── benchmarks/
-│       └── run_benchmarks.py     # not started
+│   │   ├── main.py               # FastAPI app entrypoint, done
+│   │   ├── pipeline.py           # shared generate-graph-cycles helper, done
+│   │   ├── routes/                # dataset, graph, match, benchmark, done
+│   │   └── schemas/               # request/response shapes, done
+│   ├── benchmarks/
+│   │   └── run_benchmarks.py     # done, see Benchmarks below
+│   ├── requirements.txt
+│   └── pytest.ini
 ├── frontend/
+│   ├── index.html
+│   ├── vite.config.js
 │   ├── src/
-│   │   ├── components/
-│   │   │   ├── GraphView.jsx
-│   │   │   ├── ImpactDashboard.jsx
-│   │   │   └── BenchmarkChart.jsx
-│   │   └── App.jsx
+│   │   ├── main.jsx
+│   │   ├── App.jsx
+│   │   ├── api/
+│   │   │   └── client.js          # every backend call lives here, done
+│   │   └── components/
+│   │       ├── GraphView.jsx      # the ring layout, done
+│   │       ├── ImpactDashboard.jsx
+│   │       ├── ControlPanel.jsx   # pool size, seed, optimal/greedy toggle
+│   │       └── BenchmarkChart.jsx
 │   └── package.json
 ├── data/
 │   └── sample_pairs.csv
 ├── docs/
-│   ├── assets/                   # screenshots, gifs, diagrams
+│   ├── assets/                   # screenshots, gifs, diagrams, still placeholders
 │   └── architecture.md
 ├── .gitignore
 ├── LICENSE
@@ -280,15 +288,15 @@ This creates an isolated Python environment so the project's dependencies don't 
 python -m algorithm_core.demo
 ```
 
-This runs the pipeline built so far end to end on a small synthetic dataset, dataset generation, graph construction, cycle detection, and optimal matching, and prints the results straight to the terminal. Useful for proving the algorithm works before touching the web layer at all.
+This runs the full pipeline end to end on a small synthetic dataset, dataset generation, graph construction, cycle detection, and both matchers, and prints the results straight to the terminal. Useful for proving the algorithm works before touching the web layer at all.
 
-**4. Start the API server, once it exists**
+**4. Start the API server**
 
 ```bash
 uvicorn api.main:app --reload
 ```
 
-The API will be available at `http://localhost:8000`, with interactive documentation automatically generated at `http://localhost:8000/docs`.
+The API is available at `http://localhost:8000`, with interactive documentation at `http://localhost:8000/docs`, where every endpoint can be tested directly in the browser.
 
 **5. Set up and run the frontend**
 
@@ -298,7 +306,7 @@ npm install
 npm run dev
 ```
 
-Open the printed local URL in your browser to see the graph visualization and dashboard.
+Open the printed local URL in your browser. Set a pool size, pick optimal or greedy, and run a match to see the ring light up.
 
 <br/>
 
@@ -308,24 +316,26 @@ Open the printed local URL in your browser to see the graph visualization and da
 |---|---|---|
 | `POST` | `/dataset/generate` | Generates a synthetic pool of incompatible patient-donor pairs |
 | `POST` | `/graph/build` | Builds the compatibility graph from a given pair pool |
-| `POST` | `/match/optimal` | Runs the ILP solver and returns the optimal set of matched cycles and chains |
+| `POST` | `/match/optimal` | Runs the ILP solver and returns the optimal set of matched cycles |
 | `POST` | `/match/greedy` | Runs the greedy baseline matcher for comparison |
-| `GET` | `/benchmark` | Returns match rate and runtime results across a range of pool sizes |
+| `GET` | `/benchmark` | Runs the optimal vs greedy benchmark and returns match rate and runtime results |
 
-These endpoints are planned and not yet implemented, listed here so the frontend can be built against a fixed contract in the meantime. Full request and response schemas will be documented automatically by FastAPI at the `/docs` endpoint once the server is running.
+All five endpoints are live and have been tested through the interactive `/docs` page. Full request and response schemas are documented there automatically.
 
 <br/>
 
 ## Benchmarks
 
-This table is a placeholder, will replace it with real numbers once phase 7 of the build is done.
+Real numbers, produced by `python -m benchmarks.run_benchmarks`. Pool sizes were chosen because they complete a full, uncapped cycle search (no truncation, no bias), the compatibility graph gets dense fast, so larger pools are a tracked stretch goal rather than a default here, see the Roadmap.
 
 | Pool size | Optimal matched | Greedy matched | Optimal runtime | Greedy runtime |
 |---|---|---|---|---|
-| 50 pairs | TBD | TBD | TBD | TBD |
-| 200 pairs | TBD | TBD | TBD | TBD |
-| 1000 pairs | TBD | TBD | TBD | TBD |
-| 2000 pairs | TBD | TBD | TBD | TBD |
+| 50 pairs | 18 | 15 | 19 ms | 0.1 ms |
+| 100 pairs | 47 | 43 | 360 ms | 0.5 ms |
+| 200 pairs | 89 | 82 | 4,272 ms | 3.0 ms |
+| 300 pairs | 123 | 123 | 6,799 ms | 7.7 ms |
+
+The optimal solver never matched fewer patients than greedy, and matched noticeably more at every pool size below 300. At 200 and 300 pairs the solver returned a strong feasible answer within its time budget rather than a formally proven optimum, worth mentioning if a judge asks, it doesn't change the result shown here, just how confidently it's labeled.
 
 <br/>
 
@@ -344,7 +354,7 @@ This table is a placeholder, will replace it with real numbers once phase 7 of t
 </table>
 </div>
 
-All four of these are placeholders. Drop real screenshots into `docs/assets/` with the matching filenames and they will render automatically once pushed.
+All four of these are still placeholders. Drop real screenshots into `docs/assets/` with the matching filenames and they will render automatically once pushed.
 
 <br/>
 
@@ -355,10 +365,12 @@ All four of these are placeholders. Drop real screenshots into `docs/assets/` wi
 - [x] Compatibility graph construction
 - [x] Bounded cycle enumeration
 - [x] ILP optimal matcher
-- [ ] Greedy baseline matcher and benchmark suite
-- [ ] FastAPI backend
-- [ ] Interactive frontend with live cycle highlighting
-- [ ] Impact dashboard
+- [x] Greedy baseline matcher and benchmark suite
+- [x] FastAPI backend
+- [x] Interactive frontend with live cycle highlighting
+- [x] Impact dashboard
+- [ ] Demo gif and real screenshots in place of placeholders
+- [ ] Stretch: scale cycle search past a few hundred pairs, denser pools need smarter pruning than a flat cap
 - [ ] Stretch: non simultaneous extended altruistic donor chains beyond length 3
 - [ ] Stretch: multi hospital pooling simulation
 - [ ] Stretch: fairness aware objective, weighting rare blood types and highly sensitized patients
