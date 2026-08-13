@@ -2,7 +2,7 @@
 
 # Kidney Exchange Matching System
 
-### Turning incompatible donor pairs into compatible transplant chains, using real graph theory and optimization, not an API call
+### Turning incompatible donor pairs into compatible transplant chains, using real graph theory and optimization
 
 [![Python](https://img.shields.io/badge/python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/backend-FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
